@@ -4,9 +4,11 @@ Domain: AI Drug Discovery, Structural Biology & Wet-Lab Robotics
 Standard: wwPDB / IUPAC / OpenSMILES / ISAC Standards
 """
 import datetime
+import math
+import re
 from enum import Enum
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class UrgencyLevel(str, Enum):
@@ -21,6 +23,9 @@ class SystemIntegrityStatus(str, Enum):
     RECALIBRATION_REQUIRED = "RECALIBRATION_REQUIRED"
 
 
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._\-]{0,127}$")
+
+
 class SystemTaskPayload(BaseModel):
     task_id: str = Field(..., description="Unique task / case identifier")
     target_identifier: str = Field(..., description="Entity, patient key, or genomic/cryptographic target")
@@ -30,6 +35,27 @@ class SystemTaskPayload(BaseModel):
     is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
+
+    @field_validator("task_id", "target_identifier")
+    @classmethod
+    def validate_identifier(cls, v: str) -> str:
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("Identifier must be a non-empty string")
+        if not _IDENTIFIER_RE.match(v):
+            raise ValueError(
+                "Identifier must start with alphanumeric and contain only "
+                "alphanumeric, dots, hyphens, underscores (max 128 chars)"
+            )
+        return v.strip()
+
+    @field_validator("primary_metric", "secondary_metric")
+    @classmethod
+    def validate_metric(cls, v: float) -> float:
+        if not isinstance(v, (int, float)):
+            raise ValueError("Metric must be a number")
+        if math.isnan(v) or math.isinf(v):
+            raise ValueError("Metric must be a finite number (not NaN or Infinity)")
+        return float(v)
 
 
 class AgentAlert(BaseModel):

@@ -4,10 +4,11 @@ Command Line Interface for Herg Cardiotoxicity Predictor.
 import argparse
 import csv
 import json
+import os
 import sys
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
-from agents.base import AuditLogger
+from agents.base import AuditLogger, SecurityException
 
 supervisor = SystemSupervisor(model_provider="mock")
 
@@ -45,14 +46,18 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "audit":
-        payload = SystemTaskPayload(
-            task_id=args.task_id,
-            target_identifier=args.target,
-            primary_metric=args.primary,
-            secondary_metric=args.secondary,
-            status_descriptor=args.status,
-            is_critical_flag=args.critical,
-        )
+        try:
+            payload = SystemTaskPayload(
+                task_id=args.task_id,
+                target_identifier=args.target,
+                primary_metric=args.primary,
+                secondary_metric=args.secondary,
+                status_descriptor=args.status,
+                is_critical_flag=args.critical,
+            )
+        except (ValueError, SecurityException) as e:
+            print(f"Input validation error: {e}", file=sys.stderr)
+            return 1
         dossier = supervisor.process_task(payload)
         print("=" * 80)
         print(f"  HERG CARDIOTOXICITY PREDICTOR")
@@ -80,22 +85,45 @@ def main(argv=None):
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            rows = list(reader)
+        if not os.path.isfile(args.input):
+            print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+            return 1
+
+        try:
+            with open(args.input, mode="r", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                fieldnames = list(reader.fieldnames or [])
+                if not fieldnames:
+                    print("Error: CSV file is empty or has no header row.", file=sys.stderr)
+                    return 1
+                required = {"task_id", "target_identifier", "primary_metric"}
+                missing = required - set(fieldnames)
+                if missing:
+                    print(f"Error: CSV missing required columns: {', '.join(missing)}", file=sys.stderr)
+                    return 1
+                rows = list(reader)
+        except (OSError, csv.Error) as e:
+            print(f"Error reading input file: {e}", file=sys.stderr)
+            return 1
 
         out_fields = fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]
         out_rows = []
-        for r in rows:
-            payload = SystemTaskPayload(
-                task_id=r.get("task_id", "TASK-01"),
-                target_identifier=r.get("target_identifier", "TARGET-01"),
-                primary_metric=float(r.get("primary_metric", 15.0)),
-                secondary_metric=float(r.get("secondary_metric", 5.0)),
-                status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
-            )
+        errors = 0
+        for idx, r in enumerate(rows):
+            try:
+                payload = SystemTaskPayload(
+                    task_id=r.get("task_id", f"TASK-{idx+1:04d}"),
+                    target_identifier=r.get("target_identifier", f"TARGET-{idx+1:04d}"),
+                    primary_metric=float(r.get("primary_metric", 15.0)),
+                    secondary_metric=float(r.get("secondary_metric", 5.0)),
+                    status_descriptor=r.get("status_descriptor", "NOMINAL"),
+                    is_critical_flag=str(r.get("is_critical_flag", "")).lower() in ("true", "1", "yes"),
+                )
+            except (ValueError, TypeError) as e:
+                print(f"Warning: Skipping row {idx+1} — invalid data: {e}", file=sys.stderr)
+                errors += 1
+                continue
+
             dossier = supervisor.process_task(payload)
             row_dict = dict(r)
             row_dict["overall_urgency"] = dossier.overall_urgency.value
@@ -104,11 +132,20 @@ def main(argv=None):
             row_dict["audit_hash"] = dossier.audit_hash
             out_rows.append(row_dict)
 
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=out_fields)
-            writer.writeheader()
-            writer.writerows(out_rows)
-        print(f"Processed {len(out_rows)} records -> {args.output}")
+        if not out_rows:
+            print("Error: No valid rows processed.", file=sys.stderr)
+            return 1
+
+        try:
+            with open(args.output, mode="w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=out_fields)
+                writer.writeheader()
+                writer.writerows(out_rows)
+        except OSError as e:
+            print(f"Error writing output file: {e}", file=sys.stderr)
+            return 1
+
+        print(f"Processed {len(out_rows)} records -> {args.output} ({errors} skipped)")
         return 0
 
     if args.command == "serve":

@@ -63,5 +63,12 @@ def run_simulation(iterations: int = 100):
     print("=" * 70)
 
 if __name__ == "__main__":
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+    try:
+        n = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+        if n <= 0 or n > 1_000_000:
+            print("Error: iterations must be between 1 and 1,000,000", file=sys.stderr)
+            sys.exit(1)
+    except ValueError:
+        print(f"Error: invalid iteration count: {sys.argv[1]!r}", file=sys.stderr)
+        sys.exit(1)
     run_simulation(n)

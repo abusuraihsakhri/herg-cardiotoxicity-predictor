@@ -4,6 +4,7 @@ Command-Line Interface for hERG-Guard: Voltage-Gated Potassium Channel Blockade 
 import argparse
 import csv
 import json
+import os
 import sys
 from .models import FrontierPayload
 from .agents import HERGGuardCoordinator
@@ -41,14 +42,18 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "audit":
-        payload = FrontierPayload(
-            task_id=args.task_id,
-            target_identifier=args.target,
-            primary_metric=args.primary,
-            secondary_metric=args.secondary,
-            status_descriptor=args.status,
-            is_critical_flag=args.critical,
-        )
+        try:
+            payload = FrontierPayload(
+                task_id=args.task_id,
+                target_identifier=args.target,
+                primary_metric=args.primary,
+                secondary_metric=args.secondary,
+                status_descriptor=args.status,
+                is_critical_flag=args.critical,
+            )
+        except (ValueError, TypeError) as e:
+            print(f"Input validation error: {e}", file=sys.stderr)
+            return 1
         dossier = coordinator.process(payload)
         print("=" * 80)
         print(f"  HERG-GUARD: VOLTAGE-GATED POTASSIUM CHANNEL BLOCKADE & QTC ARRHYTHMIA AGENT")
@@ -69,22 +74,45 @@ def main(argv=None):
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            rows = list(reader)
+        if not os.path.isfile(args.input):
+            print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+            return 1
+
+        try:
+            with open(args.input, mode="r", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                fieldnames = list(reader.fieldnames or [])
+                if not fieldnames:
+                    print("Error: CSV file is empty or has no header row.", file=sys.stderr)
+                    return 1
+                required = {"task_id", "target_identifier", "primary_metric"}
+                missing = required - set(fieldnames)
+                if missing:
+                    print(f"Error: CSV missing required columns: {', '.join(missing)}", file=sys.stderr)
+                    return 1
+                rows = list(reader)
+        except (OSError, csv.Error) as e:
+            print(f"Error reading input file: {e}", file=sys.stderr)
+            return 1
 
         out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
         out_rows = []
-        for r in rows:
-            payload = FrontierPayload(
-                task_id=r.get("task_id", "TASK-01"),
-                target_identifier=r.get("target_identifier", "TARGET-01"),
-                primary_metric=float(r.get("primary_metric", 15.0)),
-                secondary_metric=float(r.get("secondary_metric", 5.0)),
-                status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
-            )
+        errors = 0
+        for idx, r in enumerate(rows):
+            try:
+                payload = FrontierPayload(
+                    task_id=r.get("task_id", f"TASK-{idx+1:04d}"),
+                    target_identifier=r.get("target_identifier", f"TARGET-{idx+1:04d}"),
+                    primary_metric=float(r.get("primary_metric", 15.0)),
+                    secondary_metric=float(r.get("secondary_metric", 5.0)),
+                    status_descriptor=r.get("status_descriptor", "NOMINAL"),
+                    is_critical_flag=str(r.get("is_critical_flag", "")).lower() in ("true", "1", "yes"),
+                )
+            except (ValueError, TypeError) as e:
+                print(f"Warning: Skipping row {idx+1} — invalid data: {e}", file=sys.stderr)
+                errors += 1
+                continue
+
             dossier = coordinator.process(payload)
             row_dict = dict(r)
             row_dict["overall_status"] = dossier["overall_status"]
@@ -93,11 +121,20 @@ def main(argv=None):
             row_dict["consensus_summary"] = dossier["consensus_summary"]
             out_rows.append(row_dict)
 
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=out_fields)
-            writer.writeheader()
-            writer.writerows(out_rows)
-        print(f"Processed {len(out_rows)} records -> {args.output}")
+        if not out_rows:
+            print("Error: No valid rows processed.", file=sys.stderr)
+            return 1
+
+        try:
+            with open(args.output, mode="w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=out_fields)
+                writer.writeheader()
+                writer.writerows(out_rows)
+        except OSError as e:
+            print(f"Error writing output file: {e}", file=sys.stderr)
+            return 1
+
+        print(f"Processed {len(out_rows)} records -> {args.output} ({errors} skipped)")
         return 0
 
     if args.command == "serve":

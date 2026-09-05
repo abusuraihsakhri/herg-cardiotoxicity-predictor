@@ -16,7 +16,7 @@ PHI_PATTERNS = [
     re.compile(r"\b(?:MRN|mrn)[:#\s-]*\d{4,10}\b", re.IGNORECASE),
     re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
     re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
-    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
+    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
     re.compile(r"\b(?:DOB|Date of Birth)[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", re.IGNORECASE),
     re.compile(r"\b(?:Patient\s+Name|Patient)[:\s]+[A-Z][a-z]+\s+[A-Z][a-z]+\b", re.IGNORECASE),
     re.compile(r"\b(?:John\s+Doe|Jane\s+Smith|Alice\s+Johnson)\b", re.IGNORECASE),
@@ -57,7 +57,15 @@ class PHIGuard:
 class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
     def __init__(self, secret_key: Optional[str] = None):
-        self.secret_key = (secret_key or os.getenv("AUDIT_SECRET_KEY", "herg-cardiotoxicity-predictor-master-audit-key-2026")).encode("utf-8")
+        key = secret_key or os.getenv("AUDIT_SECRET_KEY")
+        if not key:
+            raise SecurityException(
+                "AUDIT_SECRET_KEY environment variable must be set. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        if len(key) < 16:
+            raise SecurityException("AUDIT_SECRET_KEY must be at least 16 characters long.")
+        self.secret_key = key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
@@ -93,21 +101,29 @@ class AuditTrail:
         return self.logs
 
 
-GLOBAL_AUDIT = AuditTrail()
+_GLOBAL_AUDIT: Optional[AuditTrail] = None
+
+
+def _get_global_audit() -> AuditTrail:
+    """Lazily initialize the global audit trail (allows module import without env var)."""
+    global _GLOBAL_AUDIT
+    if _GLOBAL_AUDIT is None:
+        _GLOBAL_AUDIT = AuditTrail()
+    return _GLOBAL_AUDIT
 
 
 class AuditLogger:
     @staticmethod
     def log(actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
-        return GLOBAL_AUDIT.log(actor, actor_tier, event_type, details)
+        return _get_global_audit().log(actor, actor_tier, event_type, details)
 
     @staticmethod
     def get_trail() -> List[Dict[str, Any]]:
-        return GLOBAL_AUDIT.get_trail()
+        return _get_global_audit().get_trail()
 
     @staticmethod
     def verify_integrity() -> bool:
-        return GLOBAL_AUDIT.verify_integrity()
+        return _get_global_audit().verify_integrity()
 
 
 class ActionExecutor:
