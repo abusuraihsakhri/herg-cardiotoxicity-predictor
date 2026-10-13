@@ -6,7 +6,8 @@ env/
 .env
 .env.*
 *.log
-*.csv
+results.csv
+output.csv
 *.pyc
 __pycache__/
 .pytest_cache/
