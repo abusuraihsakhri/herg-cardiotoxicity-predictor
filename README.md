@@ -1,189 +1,74 @@
-# Herg Cardiotoxicity Predictor
+# hERG-Guard — Rule-based Audit Demonstrator
 
-> **Domain:** Computational Biology & AI Drug Discovery
-> **Reference Guidelines & Standards:** `wwPDB, IUPAC & CLSI Computational Guidelines`
+A small Python and browser-based demonstration of deterministic input validation, threshold alerts, API responses, and an in-process HMAC audit ledger.
 
-<div align="center">
+**Scientific scope:** Despite the repository name, this is **not a validated hERG cardiotoxicity prediction model**. It does not process SMILES, calculate hERG IC50, estimate QTc prolongation or torsades de pointes probability, or implement a trained QSAR/ML model. Its numeric thresholds have arbitrary units and are **not** ICH S7B/E14 clinical or preclinical safety cutoffs. Do not use the outputs for clinical care, compound selection, or experimental safety decisions.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser demonstration
 
-</div>
+Open [web/index.html](web/index.html) directly in a modern browser. The interface computes locally, shows rule-triggered alerts and session counts, and exports the last result as JSON. No backend, network connection, account, or key is required. The GitHub Pages deployment workflow publishes this directory when Pages is enabled for the repository.
 
----
+The browser reflects the `agents/` demonstration rules: primary metric **>25**, secondary metric **>12**, a manual critical flag, and configured anomaly keywords in the status descriptor. These rules do not represent pharmacological decision thresholds.
 
-## 📖 What It Does
+## Installation
 
-**Herg Cardiotoxicity Predictor** is an analytical and computational platform implementing hERG potassium channel IC50 and drug-induced Torsades de Pointes arrhythmia agent evaluation.
-
----
-
-## ⚙️ Key Capabilities & Algorithmic Modules
-
-- **Deterministic Calculation Engine**: Strict compliance with standard reference formulations and thresholds.
-- **Risk & Urgency Classification**: Multi-tier categorization (ROUTINE, ELEVATED, CRITICAL_STAT) with automated clinical/operational action recommendations.
-- **Validation & Guardrails**: Rigorous input bounds checking, NaN/Infinity rejection, and anomaly detection.
-- **Multi-Worker Evaluation**: InvariantQC, SafetyEscalation, and ProtocolConformance workers assess task payloads.
-
----
-
-## 🚀 Quickstart
-
-### Installation
+Python 3.9 or later is supported by package metadata; CI runs on Python 3.10–3.12.
 
 ```bash
-# Clone the repository
 git clone https://github.com/abusuraihsakhri/herg-cardiotoxicity-predictor.git
 cd herg-cardiotoxicity-predictor
-
-# Create virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# or: venv\Scripts\activate  # Windows
-
-# Install dependencies
-pip install fastapi uvicorn pydantic pytest
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[server,test]"
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
-### Environment Variables
+In Windows PowerShell, activate with `.venv\Scripts\Activate.ps1` and set the key through `$env:AUDIT_SECRET_KEY = "..."`.
 
-The following environment variable is **required** for the audit trail:
+## Python workflows
+
+The repository maintains two related, but distinct, deterministic engines:
+
+| Workflow | Entry point | Secondary demo threshold | Audit ledger |
+| --- | --- | --- | --- |
+| General worker audit | `python cli.py` or `herg-audit` | >12 | In-process HMAC chain |
+| Alternative hERG-Guard audit | `python -m herg_guard.cli` or `herg-cardiotoxicity-predictor` | >10 | In-memory task registry only |
+
+Both use a primary metric threshold of >25 and a manual critical flag. Their classifications must not be interpreted as hERG channel blockade predictions. The alternate engine has additional descriptor keywords. See the corresponding source files for authoritative rules.
 
 ```bash
-export AUDIT_SECRET_KEY="your-secure-random-key-min-16-chars"
-```
-
-Generate a secure key:
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-### 1. Single Task Evaluation
-```bash
-python cli.py audit --task-id TASK-001 --target KEY-01 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
-```
-
-### 2. Batch CSV Processing
-```bash
+python cli.py audit --task-id TASK-001 --target SAMPLE-01 --primary 28.5 --secondary 14.2 --status DISCORDANT
 python cli.py batch -i sample.csv -o results.csv
-```
-
-### 3. Chat with Supervisor
-```bash
-python cli.py chat "What is the system status?"
-```
-
-### 4. Verify Audit Trail Integrity
-```bash
-python cli.py verify-audit
-```
-
-### 5. Launch REST API Server
-```bash
+python cli.py chat "What is the status?"
 python cli.py serve --host 127.0.0.1 --port 8000
+python -m herg_guard.cli audit --primary 29 --secondary 14
+python -m pytest -q
 ```
 
-### Parameter Reference
-- `--task-id`: Unique task identifier (alphanumeric, dots, hyphens, underscores)
-- `--target`: Target entity identifier
-- `--primary`: Primary measurement value (finite number)
-- `--secondary`: Secondary measurement value (finite number)
-- `--critical`: Emergency escalation flag (boolean)
-- `--status`: Status descriptor (e.g., NOMINAL, DISCORDANT, ANOMALY)
+The general FastAPI application is available at `http://127.0.0.1:8000/docs`. Its principal endpoints are `GET /health`, `POST /api/audit`, `POST /api/chat`, `GET /metrics` (JSON summary), and `GET /api/audit/logs`. The alternative app can be created with `herg_guard.server.create_app()`. The server requires a Python-capable host; GitHub Pages publishes only the static browser demonstration.
 
----
+## Privacy and audit security
 
-## 🛡️ Security & Enterprise Architecture
+- The browser runs the rule evaluation entirely on-device and does not send, sign, or persist entered data. Do not enter patient identifiers.
+- The Python general engine uses regex-based checks for certain identifiable text patterns; **these checks do not establish de-identification or HIPAA compliance**.
+- The general-engine audit chain signs record metadata with HMAC-SHA256 using `AUDIT_SECRET_KEY` (minimum 16 characters). It is **in process only**, not durable or externally anchored; restarting the process clears the ledger. `verify-audit` checks the ledger in the current process and cannot verify a previous run.
+- To access `GET /api/audit/logs`, set a separate `AUDIT_LOG_API_KEY` environment variable and pass the same value in the `X-Audit-Log-Key` header. Without configuration the endpoint responds 503, and unauthenticated requests are rejected.
+- The chat adapter is a deterministic mock. No remote LLM services are implemented.
+- The API is intended for local or otherwise trusted environments. Do not expose it publicly without appropriate authentication, TLS, rate limiting and access restrictions.
 
-* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, emails, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition. Requires a secret key via `AUDIT_SECRET_KEY`.
-* **Input Validation:** All identifiers validated against injection patterns; metrics validated as finite numbers (NaN/Infinity rejected).
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
----
-
-## 🧪 Testing & Verification
-
-Run the automated test suite:
+## Docker
 
 ```bash
-# Set audit key for tests (or rely on conftest.py default)
-export AUDIT_SECRET_KEY="test-audit-secret-key-for-pytest-2026"
-pytest -v
-```
-
-Execute high-throughput batch simulation benchmarks:
-
-```bash
-export AUDIT_SECRET_KEY="simulation-key-min-16-chars"
-python simulator.py 1000
-```
-
-### Test Coverage
-- **PHI Guard Enforcement:** Email, SSN, MRN, phone, and patient name detection/redaction
-- **Audit Trail Integrity:** HMAC-SHA256 chaining, tamper detection, key validation
-- **Input Validation:** NaN/Infinity rejection, identifier format enforcement, path traversal prevention
-- **Worker Evaluation:** Multi-worker alert generation and escalation logic
-- **CLI Commands:** audit, chat, batch, verify-audit, serve
-
----
-
-## 🐳 Container Deployment
-
-Create a `.env` file with your secret key:
-```
-AUDIT_SECRET_KEY=your-production-secret-key-here
-```
-
-```bash
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
 docker compose up --build
 ```
 
-Or manual Docker:
-```bash
-docker build -t herg-cardiotoxicity-predictor .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key herg-cardiotoxicity-predictor
-```
+For local-only access, modify the Compose published port to bind to `127.0.0.1:8000`. The API's audit-log key is optional and must be explicitly configured if access to audit logs is required.
 
----
+## Technology and compatibility
 
-## 📁 Project Structure
+Python standard library, Pydantic 2, FastAPI and Uvicorn (optional server dependencies); browser interface built with plain HTML, CSS, and JavaScript. A recent Chrome, Edge, Firefox, or Safari browser is recommended. The CI workflow tests the Python package and checks browser JavaScript syntax with Node.js.
 
-```
-herg-cardiotoxicity-predictor/
-├── agents/                  # Core analytical agents module
-│   ├── api.py              # FastAPI REST endpoints
-│   ├── base.py             # PHI guard, HMAC audit trail
-│   ├── models.py           # Pydantic v2 schemas with validation
-│   ├── supervisor.py       # Multi-worker orchestrator
-│   ├── workers.py          # Domain worker agents
-│   ├── llm_factory.py      # LLM provider abstraction
-│   ├── metrics.py          # Prometheus metrics collector
-│   ├── learning.py         # Bayesian calibration engine
-│   └── streamer.py         # WebSocket telemetry broadcaster
-├── herg_guard/             # Alternative domain module
-│   ├── agents.py           # hERG-Guard coordination agents
-│   ├── engine.py           # Core algorithmic engine
-│   ├── models.py           # Frontier payload models
-│   ├── cli.py              # Domain-specific CLI
-│   └── server.py           # Domain-specific FastAPI server
-├── tests/                  # Pytest test suite
-├── web/index.html          # Operations console UI
-├── cli.py                  # Main CLI entry point
-├── simulator.py            # High-throughput simulator
-├── enrichment.py           # Feature enrichment modules
-├── pyproject.toml          # Project metadata & dependencies
-├── Dockerfile              # Container image definition
-└── docker-compose.yml      # Container orchestration
-```
+## License
 
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+[MIT](LICENSE).
