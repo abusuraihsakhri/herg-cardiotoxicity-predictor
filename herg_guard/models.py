@@ -67,7 +67,7 @@ class AgentTelemetryAlert:
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "ICH S7B / E14 Non-Clinical Cardiac Safety"
+    standard_reference: str = "Unvalidated demonstration rule set"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
