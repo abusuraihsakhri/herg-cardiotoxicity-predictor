@@ -10,8 +10,8 @@ coordinator = HERGGuardCoordinator()
 
 def create_app():
     try:
-        from fastapi import FastAPI
-        from pydantic import BaseModel
+        from fastapi import FastAPI, HTTPException
+        from pydantic import BaseModel, Field
 
         app = FastAPI(
             title="hERG-Guard: Voltage-Gated Potassium Channel Blockade & QTc Arrhythmia Agent",
@@ -24,9 +24,9 @@ def create_app():
             target_identifier: str = "TARGET-BIO-KEY"
             primary_metric: float = 28.5
             secondary_metric: float = 14.2
-            status_descriptor: str = "DISCORDANT_ANOMALY"
+            status_descriptor: str = Field(default="DISCORDANT_ANOMALY", max_length=200)
             is_critical_flag: bool = True
-            attributes: Dict[str, Any] = {}
+            attributes: Dict[str, Any] = Field(default_factory=dict)
 
         class ChatRequest(BaseModel):
             query: str
@@ -37,15 +37,18 @@ def create_app():
 
         @app.post("/api/audit")
         def api_audit(req: TaskRequest):
-            payload = FrontierPayload(
-                task_id=req.task_id,
-                target_identifier=req.target_identifier,
-                primary_metric=req.primary_metric,
-                secondary_metric=req.secondary_metric,
-                status_descriptor=req.status_descriptor,
-                is_critical_flag=req.is_critical_flag,
-                attributes=req.attributes,
-            )
+            try:
+                payload = FrontierPayload(
+                    task_id=req.task_id,
+                    target_identifier=req.target_identifier,
+                    primary_metric=req.primary_metric,
+                    secondary_metric=req.secondary_metric,
+                    status_descriptor=req.status_descriptor,
+                    is_critical_flag=req.is_critical_flag,
+                    attributes=req.attributes,
+                )
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from None
             return coordinator.process(payload)
 
         @app.post("/api/chat")
