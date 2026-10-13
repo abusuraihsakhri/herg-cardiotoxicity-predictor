@@ -58,7 +58,11 @@ def main(argv=None):
         except (ValueError, SecurityException) as e:
             print(f"Input validation error: {e}", file=sys.stderr)
             return 1
-        dossier = supervisor.process_task(payload)
+        try:
+            dossier = supervisor.process_task(payload)
+        except SecurityException as exc:
+            print(f"Input validation error: {exc}", file=sys.stderr)
+            return 1
         print("=" * 80)
         print(f"  HERG CARDIOTOXICITY PREDICTOR")
         print(f"  Domain: AI Drug Discovery, Structural Biology & Wet-Lab Robotics | Standard: wwPDB / IUPAC / OpenSMILES / ISAC Standards")
@@ -74,7 +78,11 @@ def main(argv=None):
         return 0
 
     if args.command == "chat":
-        ans = supervisor.query_supervisory_chat(" ".join(args.query))
+        try:
+            ans = supervisor.query_supervisory_chat(" ".join(args.query))
+        except SecurityException as exc:
+            print(f"Input validation error: {exc}", file=sys.stderr)
+            return 1
         print(f"\n[Herg Cardiotoxicity Predictor Supervisor]:\n{ans}\n")
         return 0
 
@@ -106,10 +114,14 @@ def main(argv=None):
             print(f"Error reading input file: {e}", file=sys.stderr)
             return 1
 
-        out_fields = fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_urgency", "integrity_status", "total_alerts", "audit_hash"]))
         out_rows = []
         errors = 0
         for idx, r in enumerate(rows):
+            if None in r:
+                print(f"Warning: Skipping row {idx+1} — unexpected extra CSV columns", file=sys.stderr)
+                errors += 1
+                continue
             try:
                 payload = SystemTaskPayload(
                     task_id=r.get("task_id", f"TASK-{idx+1:04d}"),
@@ -124,13 +136,20 @@ def main(argv=None):
                 errors += 1
                 continue
 
-            dossier = supervisor.process_task(payload)
+            try:
+                dossier = supervisor.process_task(payload)
+            except SecurityException as exc:
+                print(f"Warning: Skipping row {idx+1} — {exc}", file=sys.stderr)
+                errors += 1
+                continue
             row_dict = dict(r)
             row_dict["overall_urgency"] = dossier.overall_urgency.value
             row_dict["integrity_status"] = dossier.integrity_status.value
             row_dict["total_alerts"] = dossier.total_alerts
             row_dict["audit_hash"] = dossier.audit_hash
-            out_rows.append(row_dict)
+            # Prevent spreadsheet formula interpretation on opening exported CSV.
+            out_rows.append({key: ("\x27" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")) else value)
+                             for key, value in row_dict.items()})
 
         if not out_rows:
             print("Error: No valid rows processed.", file=sys.stderr)

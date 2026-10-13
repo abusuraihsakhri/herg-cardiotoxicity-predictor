@@ -75,5 +75,5 @@ class SystemSupervisor:
 
     def query_supervisory_chat(self, query: str) -> str:
         PHIGuard.assert_no_phi(query)
-        prompt = f"Supervisor inquiry for Herg Cardiotoxicity Predictor under wwPDB / IUPAC / OpenSMILES / ISAC Standards: {query}"
+        prompt = f"Supervisor inquiry for Herg Cardiotoxicity Predictor using unvalidated rule-based demonstration thresholds: {query}"
         return self.llm.invoke(prompt)

@@ -18,8 +18,8 @@ class FrontierDomainEngine:
         if value > cls.PRIMARY_BOUND:
             return {
                 "summary": "Primary Domain Boundary Deviation",
-                "details": f"Parameter value ({value:.3f}) exceeds operational threshold ({cls.PRIMARY_BOUND:.1f}) under ICH S7B / E14 Non-Clinical Cardiac Safety.",
-                "remediation": "Engage parameter recalibration and algorithmic verification routine.",
+                "details": f"Parameter value ({value:.3f}) exceeds operational threshold ({cls.PRIMARY_BOUND:.1f}) under this unvalidated demonstration rule; no clinical threshold is implied.",
+                "remediation": "Review the input and demonstration rule.",
             }
         return None
 
@@ -28,8 +28,8 @@ class FrontierDomainEngine:
         if value > cls.SECONDARY_BOUND or is_critical:
             return {
                 "summary": "Critical Domain Condition Triggered",
-                "details": f"Secondary index ({value:.3f}) with CriticalFlag={is_critical} demands prioritized resolution.",
-                "remediation": "Initiate automated fail-safe state machine and telemetry alert dispatch.",
+                "details": f"Secondary index ({value:.3f}) with CriticalFlag={is_critical} triggers a demonstration alert; no real-world escalation is performed.",
+                "remediation": "Review the flag manually; no automated fail-safe or dispatch occurs.",
             }
         return None
 
@@ -39,7 +39,7 @@ class FrontierDomainEngine:
         if any(flag in desc_upper for flag in ["VIOLATION", "DISCORDANT", "ANOMALY", "MUTANT", "LEAK"]):
             return {
                 "summary": "Specification / Protocol Anomaly Identified",
-                "details": f"Telemetry status flag '{descriptor}' violates ICH S7B / E14 Non-Clinical Cardiac Safety conformance matrix.",
-                "remediation": "Execute automated rollback or secondary consensus verification.",
+                "details": f"Telemetry status flag '{descriptor}' matches a configured demonstration anomaly keyword.",
+                "remediation": "Review the descriptor manually; no rollback is performed.",
             }
         return None

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Herg Cardiotoxicity Predictor API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
+    "description": "Rule-based audit demonstrator; not a validated hERG cardiotoxicity prediction system.",
     "version": "3.0.0-ENTERPRISE",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
@@ -22,7 +22,7 @@
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "Return operational counters in JSON format",
         "responses": {
           "200": {
             "description": "Prometheus text metrics"
@@ -70,13 +70,16 @@
         "responses": {
           "200": {
             "description": "Consensus dossier with HMAC signature"
+          },
+          "422": {
+            "description": "Invalid input or detected prohibited identifier"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Return deterministic mock supervisory response",
         "requestBody": {
           "content": {
             "application/json": {
@@ -103,12 +106,29 @@
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Retrieve and verify current in-process audit ledger (requires X-Audit-Log-Key)",
         "responses": {
           "200": {
             "description": "Cryptographic audit trail"
+          },
+          "403": {
+            "description": "Unauthorized access"
+          },
+          "503": {
+            "description": "Audit-log access not configured"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-Audit-Log-Key",
+            "in": "header",
+            "required": false,
+            "description": "Key matching AUDIT_LOG_API_KEY when configured.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     }
   }

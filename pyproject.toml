@@ -13,15 +13,25 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Security/Cryptography",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2.0,<3.0"]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.110,<1.0", "uvicorn>=0.29,<1.0"]
+test = ["pytest>=8,<10", "httpx>=0.27,<1.0"]
 
 [project.scripts]
 herg-cardiotoxicity-predictor = "herg_guard.cli:main"
+herg-audit = "cli:main"
 
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/herg-cardiotoxicity-predictor"
 Repository = "https://github.com/abusuraihsakhri/herg-cardiotoxicity-predictor.git"
+
+[tool.setuptools]
+py-modules = ["cli", "enrichment", "simulator", "herg_guard_app"]
+
+[tool.setuptools.packages.find]
+include = ["agents*", "herg_guard*"]
