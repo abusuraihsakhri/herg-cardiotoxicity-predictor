@@ -14,7 +14,7 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Herg Cardiotoxicity Predictor API",
-    description="Enterprise Distributed Component Platform (AI Drug Discovery, Structural Biology & Wet-Lab Robotics)",
+    description="Rule-based demonstration API; not a validated hERG, QTc or clinical risk model",
     version="3.0.0-ENTERPRISE",
 )
 
@@ -25,7 +25,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "herg-cardiotoxicity-predictor", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "wwPDB / IUPAC / OpenSMILES / ISAC Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "herg-cardiotoxicity-predictor", "domain": "AI Drug Discovery, Structural Biology & Wet-Lab Robotics", "standard": "Unvalidated demonstration rule set", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
