@@ -15,7 +15,7 @@ def create_app():
 
         app = FastAPI(
             title="hERG-Guard: Voltage-Gated Potassium Channel Blockade & QTc Arrhythmia Agent",
-            description="Evaluates basic pKa, lipophilicity, and hydrophobic aromatic feature topologies to predict hERG potassium channel IC50 and Torsades de Pointes risks.",
+            description="Applies unvalidated numeric demonstration thresholds; does not predict hERG IC50 or Torsades de Pointes.",
             version="2.0.0-FRONTIER",
         )
 
