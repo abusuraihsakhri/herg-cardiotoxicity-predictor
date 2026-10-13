@@ -1,10 +1,12 @@
 """
 FastAPI REST API Server for Herg Cardiotoxicity Predictor.
 """
-from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+import hmac
+import os
+from typing import Optional
+from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -18,7 +20,7 @@ app = FastAPI(
 
 
 class ChatRequest(BaseModel):
-    query: str
+    query: str = Field(min_length=1, max_length=2000)
 
 
 @app.get("/health")
@@ -37,7 +39,10 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
+    try:
+        dossier = supervisor.process_task(payload)
+    except SecurityException:
+        raise HTTPException(status_code=422, detail="Input contains a prohibited identifier") from None
     return dossier.to_dict()
 
 
@@ -46,10 +51,15 @@ def api_chat(req: ChatRequest):
     try:
         ans = supervisor.query_supervisory_chat(req.query)
         return {"response": ans}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except SecurityException:
+        raise HTTPException(status_code=422, detail="Input contains a prohibited identifier") from None
 
 
 @app.get("/api/audit/logs")
-def api_audit_logs():
+def api_audit_logs(x_audit_log_key: Optional[str] = Header(default=None)):
+    expected = os.environ.get("AUDIT_LOG_API_KEY")
+    if not expected:
+        raise HTTPException(status_code=503, detail="Audit-log access is not configured")
+    if not x_audit_log_key or not hmac.compare_digest(x_audit_log_key, expected):
+        raise HTTPException(status_code=403, detail="Forbidden")
     return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
