@@ -31,7 +31,7 @@ class SystemTaskPayload(BaseModel):
     target_identifier: str = Field(..., description="Entity, patient key, or genomic/cryptographic target")
     primary_metric: float = Field(..., description="Primary domain measurement or score")
     secondary_metric: float = Field(default=0.0, description="Secondary kinetic or confidence score")
-    status_descriptor: str = Field(default="NOMINAL", description="Status code or phenotype descriptor")
+    status_descriptor: str = Field(default="NOMINAL", max_length=200, description="Status code or phenotype descriptor")
     is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
