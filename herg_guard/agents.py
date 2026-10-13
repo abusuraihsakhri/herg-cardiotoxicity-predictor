@@ -93,7 +93,7 @@ class HERGGuardCoordinator:
             "critical_count": crit_count,
             "warning_count": warn_count,
             "alerts": [a.to_dict() for a in all_alerts],
-            "standard_specification": "ICH S7B / E14 Non-Clinical Cardiac Safety",
+            "standard_specification": "Unvalidated demonstration rule set",
             "consensus_summary": f"Consensus evaluation completed across 3 sub-agents with status [{status.value}].",
         }
 
@@ -105,6 +105,6 @@ class HERGGuardCoordinator:
         if "status" in q or "ledger" in q:
             return f"hERG-Guard: Voltage-Gated Potassium Channel Blockade & QTc Arrhythmia Agent currently managing {len(self.execution_ledger)} execution tasks in air-gapped memory."
         elif "standard" in q or "spec" in q:
-            return "Active runtime operating strictly according to ICH S7B / E14 Non-Clinical Cardiac Safety specifications."
+            return "ICH S7B / E14 Non-Clinical Cardiac Safety is relevant background, but these demonstration rules are not validated against it."
         else:
-            return f"hERG-Guard: Voltage-Gated Potassium Channel Blockade & QTc Arrhythmia Agent executive coordinator online. Zero-telemetry on-premises surveillance active."
+            return f"Deterministic demonstration coordinator online; no live hERG assay or clinical surveillance is performed."
