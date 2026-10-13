@@ -1,236 +1,149 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herg Cardiotoxicity Predictor — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>hERG-Guard | Rule-based audit demonstrator</title>
+  <style>
+    :root{font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark;
+      --bg:#0b1220;--panel:#111e30;--border:#2d4056;--text:#ebf2fa;--muted:#b3c3d5;--cyan:#70d9e8;--amber:#ffd18a}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}main{max-width:1080px;margin:auto;padding:28px 20px 60px}
+    header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:26px}
+    h1{font-size:clamp(1.55rem,3vw,2.35rem);letter-spacing:-.035em;margin:.2rem 0}
+    h2{font-size:1.15rem;margin:0 0 16px}p{margin:.4rem 0 1rem}
+    .kicker{color:var(--cyan);font-weight:700;font-size:.75rem;letter-spacing:.13em;text-transform:uppercase}
+    .subtle,small{color:var(--muted)}
+    .tag{border:1px solid var(--border);padding:.3rem .7rem;border-radius:25px;font-size:.8rem;color:var(--cyan);white-space:nowrap}
+    .notice{border:1px solid #866739;border-radius:12px;background:#302718;padding:14px 18px;margin:0 0 23px;color:#ffdfae}
+    .grid{display:grid;grid-template-columns:minmax(280px,.95fr) minmax(350px,1.15fr);gap:20px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;min-width:0}
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .full{grid-column:1/-1}label{display:block;font-size:.85rem;font-weight:650;color:#d8e4f1;margin-bottom:5px}
+    input{width:100%;background:#0a1726;color:#fff;border:1px solid #50627a;border-radius:8px;padding:11px;font:inherit}
+    input:focus-visible,button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+    .check{display:flex;align-items:center;gap:10px;margin:12px 0 18px}.check input{width:18px;height:18px;accent-color:var(--cyan)}
+    .check label{margin:0}button{font:inherit;cursor:pointer;border-radius:9px;padding:11px 16px;border:1px solid #59758e;background:#152c42;color:white}
+    button.primary{background:#4fc9d9;border-color:#4fc9d9;color:#071a26;font-weight:750}button:hover{filter:brightness(1.1)}
+    .actions{display:flex;flex-wrap:wrap;gap:9px}.actions button{flex:1}
+    #error{min-height:1.4em;color:#ffbab6;margin:10px 0}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+    .metric{border:1px solid var(--border);border-radius:10px;padding:12px}.metric strong{font-size:1.25rem;display:block}
+    .metric span{font-size:.76rem;color:var(--muted)}
+    .outcome{border:1px solid var(--border);padding:14px;border-radius:10px;margin-bottom:12px}
+    .outcome strong{font-size:1.1rem}.result-list{list-style:none;padding:0;margin:0}
+    .result-list li{border-left:3px solid var(--amber);padding:9px 12px;margin:10px 0;background:#253044;border-radius:0 7px 7px 0}
+    .result-list li strong{display:block}.result-list li p{margin:2px 0 0;font-size:.87rem}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#c5f2ec;background:#071321;border:1px solid #32465b;padding:12px;border-radius:10px;font-size:.76rem;max-height:300px;overflow:auto}
+    details{margin-top:16px}summary{cursor:pointer;font-weight:700}.foot{margin-top:24px;color:var(--muted);font-size:.86rem}
+    .skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:12px;background:#fff;color:#000;padding:8px;z-index:2}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.panel{padding:18px}}
+    @media(max-width:450px){.fields,.metrics{grid-template-columns:1fr}.full{grid-column:auto}}
+  </style>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Herg Cardiotoxicity Predictor</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+<a class="skip" href="#audit-form">Skip to form</a>
+<main>
+  <header>
+    <div><div class="kicker">Research software · deterministic demo</div>
+      <h1>hERG-Guard</h1><p class="subtle">Transparent, local rule-based audit of generic numeric inputs</p></div>
+    <a class="tag" href="https://github.com/abusuraihsakhri/herg-cardiotoxicity-predictor">Source on GitHub ↗</a>
+  </header>
+  <p class="notice"><strong>Not a cardiotoxicity predictor.</strong> This prototype does not calculate hERG IC50, assess QTc, analyze SMILES, or provide clinically validated risk estimates. The arbitrary input thresholds are software demonstration rules, not ICH S7B/E14 safety limits. Do not use for patient care or compound selection.</p>
+  <div class="grid">
+    <section class="panel" aria-labelledby="form-title">
+      <h2 id="form-title">Evaluate one record</h2>
+      <form id="audit-form">
+        <div class="fields">
+          <div><label for="task_id">Task ID</label><input id="task_id" value="TASK-001" maxlength="128" required pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,127}"></div>
+          <div><label for="target_id">Target ID</label><input id="target_id" value="SPECIMEN-01" maxlength="128" required pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,127}"></div>
+          <div><label for="primary">Primary metric (arbitrary units)</label><input id="primary" type="number" step="any" value="29.4" required></div>
+          <div><label for="secondary">Secondary metric (arbitrary units)</label><input id="secondary" type="number" step="any" value="14.8" required></div>
+          <div class="full"><label for="descriptor">Status descriptor</label><input id="descriptor" value="DISCORDANT" maxlength="200" required></div>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Herg Cardiotoxicity Predictor Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "herg-cardiotoxicity-predictor",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+        <div class="check"><input id="critical" type="checkbox"><label for="critical">Manual critical escalation flag</label></div>
+        <div class="actions"><button class="primary" type="submit">Run local audit</button><button type="button" id="clear">Reset results</button></div>
+      </form>
+      <p id="error" role="alert"></p>
+      <details><summary>Exact demonstration rules</summary>
+        <p class="subtle">Primary metric > 25: elevated. Secondary metric > 12: elevated. Manual critical flag: critical. Descriptor containing DISCORDANT, ANOMALY, MUTANT, VIOLATION, FAIL, or REJECT: elevated. Highest tier determines the overall outcome.</p>
+      </details>
+      <p class="subtle" style="margin-top:18px;font-size:.85rem">All computation runs in this browser. No information is uploaded, persisted, signed, or transmitted to an API. Avoid entering patient-identifiable data.</p>
+    </section>
+    <section class="panel" aria-labelledby="results-title">
+      <h2 id="results-title">Audit results</h2>
+      <div class="metrics" aria-label="Session counters">
+        <div class="metric"><strong id="processed">0</strong><span>Processed in this tab</span></div>
+        <div class="metric"><strong id="elevated">0</strong><span>Elevated or critical</span></div>
+        <div class="metric"><strong id="alerts">0</strong><span>Total rule alerts</span></div>
+      </div>
+      <div id="results" aria-live="polite"><p class="subtle">Enter values and run an audit. Results will appear here.</p></div>
+      <div class="actions"><button id="export" disabled type="button">Download last result (JSON)</button></div>
+    </section>
+  </div>
+  <p class="foot">This static demonstration uses the rule set from the repository's <code>agents/workers.py</code>. The Python CLI and REST API provide additional workflows and a separate HMAC ledger when configured on a server. No ledger or machine-learning model runs on this page.</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const identifier = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+  const anomalies = ["DISCORDANT", "ANOMALY", "MUTANT", "VIOLATION", "FAIL", "REJECT"];
+  let processed = 0, escalated = 0, alertCount = 0, last = null;
+  function assess(input) {
+    const alerts = [];
+    if (input.primary_metric > 25) alerts.push({origin_worker:"InvariantQCWorker",urgency:"ELEVATED_RISK",summary:"Primary metric exceeds demo threshold (>25)"});
+    if (input.is_critical_flag || input.secondary_metric > 12) alerts.push({origin_worker:"SafetyEscalationWorker",urgency:input.is_critical_flag?"CRITICAL_STAT_PANIC":"ELEVATED_RISK",summary:input.is_critical_flag?"Manual critical escalation":"Secondary metric exceeds demo threshold (>12)"});
+    if (anomalies.some(word => input.status_descriptor.toUpperCase().includes(word))) alerts.push({origin_worker:"ProtocolConformanceWorker",urgency:"ELEVATED_RISK",summary:"Descriptor contains a configured anomaly keyword"});
+    const severity = alerts.some(x=>x.urgency==="CRITICAL_STAT_PANIC")?"CRITICAL_STAT_PANIC":alerts.length?"ELEVATED_RISK":"ROUTINE";
+    return {task_id:input.task_id,target_identifier:input.target_identifier,overall_urgency:severity,
+      integrity_status:severity==="CRITICAL_STAT_PANIC"?"RECALIBRATION_REQUIRED":alerts.length?"DISCORDANT_ANOMALY":"VALIDATED_OPTIMAL",
+      total_alerts:alerts.length,alerts:alerts,method:"Deterministic, unvalidated rule demonstration; not a prediction"};
+  }
+  function safeInput() {
+    const task = $("task_id").value, target = $("target_id").value;
+    const p = Number($("primary").value), s = Number($("secondary").value);
+    if (!identifier.test(task) || !identifier.test(target)) throw Error("IDs must begin with an alphanumeric character and contain only letters, numbers, dots, dashes or underscores (max 128).");
+    if (!$("primary").value.trim() || !$("secondary").value.trim() || !Number.isFinite(p) || !Number.isFinite(s)) throw Error("Both metrics must be finite numbers.");
+    return {task_id:task,target_identifier:target,primary_metric:p,secondary_metric:s,status_descriptor:$("descriptor").value,is_critical_flag:$("critical").checked};
+  }
+  function paint(data) {
+    const root=$("results");root.replaceChildren();
+    const summary=document.createElement("div");summary.className="outcome";
+    const heading=document.createElement("strong");heading.textContent=data.overall_urgency.replaceAll("_"," ");
+    const info=document.createElement("p");info.className="subtle";info.textContent=data.total_alerts+" rule alerts · "+data.task_id+" · "+data.integrity_status;
+    summary.append(heading,info);root.append(summary);
+    const list=document.createElement("ul");list.className="result-list";
+    for (const a of data.alerts) {
+      const li=document.createElement("li"),strong=document.createElement("strong"),detail=document.createElement("p");
+      strong.textContent=a.origin_worker+" · "+a.urgency;detail.textContent=a.summary;li.append(strong,detail);list.append(li);
+    }
+    if (!data.alerts.length) {const p=document.createElement("p");p.textContent="No demonstration thresholds triggered.";root.append(p);}
+    else root.append(list);
+    const details=document.createElement("details"),sum=document.createElement("summary"),pre=document.createElement("pre");
+    sum.textContent="View structured result";pre.textContent=JSON.stringify(data,null,2);details.append(sum,pre);root.append(details);
+  }
+  $("audit-form").addEventListener("submit",function(event) {
+    event.preventDefault();$("error").textContent="";
+    try {
+      const data=assess(safeInput());last=data;paint(data);
+      processed++;escalated+=data.total_alerts>0?1:0;alertCount+=data.total_alerts;
+      $("processed").textContent=String(processed);$("elevated").textContent=String(escalated);$("alerts").textContent=String(alertCount);
+      $("export").disabled=false;
+    } catch (error) {$("error").textContent=error.message;}
+  });
+  $("clear").addEventListener("click",function(){
+    processed=0;escalated=0;alertCount=0;last=null;
+    $("processed").textContent="0";$("elevated").textContent="0";$("alerts").textContent="0";
+    $("results").textContent="No results yet.";$("error").textContent="";$("export").disabled=true;
+  });
+  $("export").addEventListener("click",function() {
+    if(!last) return;
+    const blob=new Blob([JSON.stringify(last,null,2)+"\n"],{type:"application/json"});
+    const url=URL.createObjectURL(blob),link=document.createElement("a");
+    link.href=url;link.download="herg-guard-audit.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+})();
+</script>
 </body>
 </html>
