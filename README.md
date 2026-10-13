@@ -63,7 +63,7 @@ export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32
 docker compose up --build
 ```
 
-For local-only access, modify the Compose published port to bind to `127.0.0.1:8000`. The API's audit-log key is optional and must be explicitly configured if access to audit logs is required.
+Compose binds the API to `127.0.0.1:8000` by default so it is not exposed on public network interfaces. The API's audit-log key is optional and must be explicitly configured if access to audit logs is required.
 
 ## Technology and compatibility
 
