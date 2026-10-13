@@ -30,10 +30,14 @@ def _validate_payload_inputs(task_id: str, target_identifier: str, primary_metri
         raise ValueError("target_identifier must be a non-empty string")
     if not _IDENTIFIER_RE.match(target_identifier):
         raise ValueError("target_identifier contains invalid characters")
-    if not isinstance(primary_metric, (int, float)) or math.isnan(primary_metric) or math.isinf(primary_metric):
-        raise ValueError("primary_metric must be a finite number")
-    if not isinstance(secondary_metric, (int, float)) or math.isnan(secondary_metric) or math.isinf(secondary_metric):
-        raise ValueError("secondary_metric must be a finite number")
+    for name, value in (("primary_metric", primary_metric), ("secondary_metric", secondary_metric)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be a finite number")
+        try:
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be a finite number")
+        except OverflowError:
+            raise ValueError(f"{name} must be a finite number") from None
 
 
 @dataclass
@@ -49,6 +53,10 @@ class FrontierPayload:
 
     def __post_init__(self):
         _validate_payload_inputs(self.task_id, self.target_identifier, self.primary_metric, self.secondary_metric)
+        if not isinstance(self.status_descriptor, str) or len(self.status_descriptor) > 200:
+            raise ValueError("status_descriptor must be a string of at most 200 characters")
+        if not isinstance(self.attributes, dict):
+            raise ValueError("attributes must be a dictionary")
 
 
 @dataclass
